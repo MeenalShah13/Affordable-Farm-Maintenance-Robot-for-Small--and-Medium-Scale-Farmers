@@ -2,9 +2,9 @@
 
 ![Status](https://img.shields.io/badge/status-Active-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.9+-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+![License](https://img.shields.io/badge/license-AGPL-orange)
 
-A low-cost autonomous ground robot for small-to-medium-scale farms that performs autonomous field coverage (mowing) and collects crop health samples for AI-driven disease detection. The robot operates independently for hours, uploads data to cloud (Firebase), and automatically returns to dock for charging.
+A low-cost autonomous ground robot for small-to-medium-scale farms that performs autonomous field coverage (mowing) and collects crop health samples for AI-driven disease detection. The robot operates independently, uploads data to cloud (Firebase), and automatically returns to dock for charging.
 
 ## Quick Start
 
@@ -38,7 +38,7 @@ python experiments.py                 # Feature selection & comparisons
 │   ├── main.py                        # Entry point — starts control loop
 │   ├── robot.py                       # State machine (MOWING → SAMPLING → DOCKING, etc.)
 │   ├── config.py                      # All hardware constants & tuning params
-│   ├── requirements.txt                # Pi dependencies (TensorFlow, PCA9685, sensors)
+│   ├── requirements.txt               # Pi dependencies (TensorFlow, PCA9685, sensors)
 │   ├── hardware/                      # Motor, sensor, battery, camera drivers
 │   ├── navigation/                    # Grid coverage, path planning (Dijkstra)
 │   ├── sampling/                      # AI pipeline, preprocessing, sampler orchestration
@@ -66,7 +66,7 @@ python experiments.py                 # Feature selection & comparisons
 
 ### Autonomous Navigation
 - **Boustrophedon coverage**: Back-and-forth lawn mowing pattern over configurable grid
-- **Odometry-based localization**: Encoder ticks → pose estimates with ~5cm accuracy
+- **Odometry-based localization**: Encoder ticks → pose estimates with ~10cm accuracy
 - **Obstacle detection**: IR rangefinders + IMU bump detection + stuck recovery
 - **Dynamic path planning**: Dijkstra routing around obstacles, obstacle decay over time
 - **Dock detection**: Charging dock IR beacons for return-to-dock homing
@@ -78,7 +78,7 @@ python experiments.py                 # Feature selection & comparisons
 
 ### AI Disease Detection
 - **9 trained models** for crop disease classification (Pepper, Tomato, Potato)
-- **LiteCShuffle** (deployed): Lightweight attention-based CNN, <50ms inference
+- **LiteCShuffle** (deployed): Lightweight attention-based CNN, <10s inference
 - **Preprocessing pipeline**: Denoise (cellular automaton) → contrast (CLAHE) → background removal
 - **Heuristic leaf detection**: Green dominance + edge density scoring
 - **15 disease classes** + healthy variants for target crops
@@ -193,8 +193,8 @@ Train & evaluate 9 models in **ai-model/model_training.py**:
 | FlyCaps | Capsule | Images/Features | Firefly-optimised ELM |
 | **LiteCShuffle** | **Attention CNN** | **Images** | **Deployed** — lightweight, <10s |
 | YangViT | SNN proxy | Images | Winner-take-all lateral inhibition |
-| HybridGrasshopperABC | MLP | Features | Grasshopper + ABC (paywall) |
-| MantisSearch | ELM | Features | Mantis Search algorithm (paywall) |
+| HybridGrasshopperABC | MLP | Features | Grasshopper + ABC |
+| MantisSearch | ELM | Features | Mantis Search algorithm |
 
 **Training from scratch**:
 ```python
