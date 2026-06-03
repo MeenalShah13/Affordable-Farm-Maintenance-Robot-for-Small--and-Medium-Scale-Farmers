@@ -1,0 +1,7 @@
+# FieldBot Laptop Dashboard — dependencies
+# Install: pip install -r requirements.txt
+#
+# Flask serves the single HTML file locally.
+# All actual data comes from Firebase directly in the browser —
+# no connection to the Raspberry Pi is needed at any point.
+flask

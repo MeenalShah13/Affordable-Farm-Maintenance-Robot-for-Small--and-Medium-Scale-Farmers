@@ -1,0 +1,527 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/appearances/protos/Soil.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/plants/protos/PottedTree.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  orientation -0.0023274549524897837 -0.9999625427739384 0.008336426244127906 5.7398667946519835
+  position -7.806823819966837 -2.1992260544371662 5.015044374334713
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+Floor {
+  size 5 5
+  appearance Soil {
+  }
+}
+Solid {
+  translation -0.5 1.54 0.02
+  children [
+    DEF ANCHOR Shape {
+      appearance PBRAppearance {
+        baseColor 1 0 0
+        roughness 0.2
+        metalness 0
+        emissiveColor 1 0 0
+      }
+      geometry Cylinder {
+        height 0.02
+        radius 0.06
+      }
+    }
+    DEF ANCHOR_POSE Pose {
+      translation 0 0 0.12
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 1 0 0
+            emissiveColor 1 0 0
+          }
+          geometry Cylinder {
+            height 0.22
+            radius 0.01
+          }
+        }
+      ]
+    }
+    Robot {
+      children [
+        DEF RADIO Emitter {
+          translation 0 0 0.2
+          channel 100
+          baudRate 4800
+        }
+      ]
+      name "anchor_radio1"
+      controller "emitter"
+    }
+  ]
+  name "anchor1"
+  boundingObject DEF ANCHOR_BOUND Cylinder {
+    height 0.02
+    radius 0.06
+  }
+  physics DEF ANCHOR_PH Physics {
+    density -1
+    mass 0.2
+  }
+}
+Solid {
+  translation 1.64 -1.57 0.02
+  children [
+    USE ANCHOR
+    USE ANCHOR_POSE
+    Robot {
+      children [
+        Emitter {
+          translation 0 0 0.2
+          channel 100
+          baudRate 4800
+        }
+      ]
+      name "anchor_radio2"
+      controller "emitter"
+    }
+  ]
+  name "anchor2"
+  boundingObject USE ANCHOR_BOUND
+  physics Physics {
+    density -1
+    mass 0.2
+  }
+}
+Solid {
+  translation 1.59 1.53 0.02
+  children [
+    USE ANCHOR
+    USE ANCHOR_POSE
+    Robot {
+      children [
+        Emitter {
+          translation 0 0 0.2
+          channel 100
+          baudRate 4800
+        }
+      ]
+      name "anchor_radio3"
+      controller "emitter"
+    }
+  ]
+  name "anchor3"
+  boundingObject USE ANCHOR_BOUND
+  physics Physics {
+    density -1
+    mass 0.2
+  }
+}
+Solid {
+  translation 0.59 0 0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1 1 0
+        transparency 0.8
+        metalness 0
+      }
+      geometry Box {
+        size 2 3 0.01
+      }
+    }
+  ]
+  name "field"
+}
+PottedTree {
+  translation 0.17 0.44 -0.59
+  name "potted tree(4)"
+}
+PottedTree {
+  translation 0.92 -1.01 -0.61
+  name "potted tree(13)"
+}
+PottedTree {
+  translation 0.52 -1.05 -0.63
+  name "potted tree(14)"
+}
+PottedTree {
+  translation 0.09 -1.02 -0.56
+  name "potted tree(15)"
+}
+PottedTree {
+  translation 0.1 -0.3 -0.52
+  name "potted tree(9)"
+}
+PottedTree {
+  translation 0.53 -0.31 -0.56
+  name "potted tree(10)"
+}
+PottedTree {
+  translation 0.96 -0.33 -0.55
+  name "potted tree(11)"
+}
+PottedTree {
+  translation 0.6 0.41 -0.56
+  name "potted tree(5)"
+}
+PottedTree {
+  translation 0.99 0.4 -0.58
+  name "potted tree(6)"
+}
+PottedTree {
+  translation 0.15 1.09 -0.59
+  name "potted tree(1)"
+}
+PottedTree {
+  translation 0.55 1.07 -0.54
+  name "potted tree(2)"
+}
+PottedTree {
+  translation 0.99 1.05 -0.61
+  name "potted tree(3)"
+}
+Robot {
+  translation -0.57 -1.36 0.07
+  children [
+    DEF BODY Shape {
+      appearance PBRAppearance {
+        baseColor 0.5 0.2 0
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.2 0.15 0.05
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor 0.08 0.09 0
+      }
+      device [
+        RotationalMotor {
+          name "wheel1"
+        }
+        PositionSensor {
+          name "wheel1_ps"
+        }
+      ]
+      endPoint Solid {
+        translation 0.07937899961857636 0.09001293251941461 0.0005310030478835298
+        rotation 0.9999999999999928 8.314507510412642e-08 -8.629038499317119e-08 1.570800941511337
+        children [
+          DEF WHEEL Shape {
+            appearance PBRAppearance {
+              baseColor 0 0 1
+            }
+            geometry Cylinder {
+              height 0.01
+              radius 0.07
+            }
+          }
+        ]
+        name "wheel1"
+        boundingObject USE WHEEL
+        physics DEF WHEEL_PH Physics {
+          density -1
+          mass 0.3
+        }
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor 0.08 -0.09 0
+      }
+      device [
+        RotationalMotor {
+          name "wheel2"
+        }
+        PositionSensor {
+          name "wheel2_ps"
+        }
+      ]
+      endPoint Solid {
+        translation 0.07937268937411625 -0.09000012983862134 0.0005438746265149873
+        rotation 0.9999999999999981 4.981647570707802e-08 3.5185699906367e-08 1.5708000588942161
+        children [
+          USE WHEEL
+        ]
+        name "wheel2"
+        boundingObject USE WHEEL
+        physics USE WHEEL_PH
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor -0.08 0.09 0
+      }
+      device [
+        RotationalMotor {
+          name "wheel3"
+        }
+        PositionSensor {
+          name "wheel3_ps"
+        }
+      ]
+      endPoint Solid {
+        translation -0.08063260512732638 0.09000621882691318 0.0005430822289070596
+        rotation 1 -2.0802532562497262e-09 3.4994642384627155e-10 1.5708004934126367
+        children [
+          USE WHEEL
+        ]
+        name "wheel3"
+        boundingObject USE WHEEL
+        physics USE WHEEL_PH
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor -0.08 -0.09 0
+      }
+      device [
+        RotationalMotor {
+          name "wheel4"
+        }
+        PositionSensor {
+          name "wheel4_ps"
+        }
+      ]
+      endPoint Solid {
+        translation -0.08064038824499402 -0.09000894274581175 0.0005408858675244831
+        rotation 0.9999999999999959 -6.288431845932234e-08 6.434715910252824e-08 1.5707994583132492
+        children [
+          USE WHEEL
+        ]
+        name "wheel4"
+        boundingObject USE WHEEL
+        physics USE WHEEL_PH
+      }
+    }
+    DistanceSensor {
+      translation 0.1 0.03 0
+      rotation 0 0 1 0.3
+      children [
+        DEF DS Shape {
+          appearance PBRAppearance {
+            baseColor 0 0 1
+          }
+          geometry Box {
+            size 0.01 0.01 0.01
+          }
+        }
+      ]
+      name "ds_left"
+      lookupTable [
+        0 0 0
+        0.5 1000 0
+      ]
+      aperture 1.5718
+    }
+    DistanceSensor {
+      translation 0.1 -0.03 0
+      rotation 0 0 -1 0.3
+      children [
+        USE DS
+      ]
+      name "ds_right"
+      lookupTable [
+        0 0 0
+        0.5 1000 0
+      ]
+    }
+    Receiver {
+      channel 100
+      baudRate 4800
+    }
+    Solid {
+      translation -0.05 0 0.035
+      children [
+        DEF BATTERY Shape {
+          appearance PBRAppearance {
+            baseColor 0.5 0.5 0.5
+          }
+          geometry Box {
+            size 0.05 0.06 0.02
+          }
+        }
+      ]
+      name "battery"
+      boundingObject USE BATTERY
+      physics Physics {
+        density -1
+        mass 0.05
+      }
+    }
+    Solid {
+      translation 0 0 0.17
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.9 0.9 0.9
+            transparency 0.9
+            roughness 1
+            metalness 0
+          }
+          geometry Cylinder {
+            height 0.3
+            radius 0.02
+          }
+        }
+      ]
+      name "camera_cyl"
+    }
+    SliderJoint {
+      jointParameters JointParameters {
+        position 0.025
+        maxStop 0.3
+      }
+      device [
+        LinearMotor {
+          name "linear"
+          maxPosition 0.3
+        }
+      ]
+      endPoint Solid {
+        translation 0 0 0.03
+        children [
+          DEF DISC_CAM Shape {
+            appearance PBRAppearance {
+              baseColor 0.5 0.5 0.5
+              roughness 1
+              metalness 0
+            }
+            geometry Cylinder {
+              height 0.01
+              radius 0.02
+            }
+          }
+          HingeJoint {
+            jointParameters HingeJointParameters {
+              position 0.02
+              axis 0 0 1
+            }
+            device [
+              RotationalMotor {
+                name "camera_rm"
+              }
+            ]
+            endPoint Solid {
+              translation 1.0839853392789254e-19 2.1682597875725225e-21 0.02
+              rotation 0 0 1 0.020000000000002884
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    baseColor 0.1 0.1 0.1
+                    roughness 0.4
+                    metalness 0.3
+                  }
+                  geometry Sphere {
+                    radius 0.02
+                    subdivision 2
+                  }
+                }
+                Camera {
+                  translation 0.02 0 0
+                  fieldOfView 1
+                  width 640
+                  height 640
+                }
+              ]
+              name "camera_ball"
+              physics Physics {
+                density -1
+                mass 0.2
+              }
+            }
+          }
+        ]
+        name "disc"
+        boundingObject USE DISC_CAM
+        physics Physics {
+          density -1
+          mass 0.2
+        }
+      }
+    }
+    Solid {
+      translation 0.06 0 -0.05
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.5 0.2 0
+            transparency 0.4
+            metalness 0
+          }
+          geometry Box {
+            size 0.01 0.06 0.05
+          }
+        }
+      ]
+      name "moisture_box"
+    }
+    SliderJoint {
+      jointParameters JointParameters {
+        position -0.025
+      }
+      device [
+        LinearMotor {
+          name "linear_sensor"
+          minPosition -0.1
+          maxPosition 0.31500000000000017
+        }
+      ]
+      endPoint Solid {
+        translation 0.06 0 -0.025
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.6 0.1 0
+              metalness 0
+            }
+            geometry Box {
+              size 0.01 0.06 0.005
+            }
+          }
+          LightSensor {
+            translation 0 -0.02 0
+            rotation 0 1 0 1.5708
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0 0 1
+                  metalness 0
+                }
+                geometry Box {
+                  size 0.005 0.005 0.005
+                }
+              }
+            ]
+            name "light_sensor"
+          }
+          LED {
+            translation 0 0.02 -0.005
+            rotation 0 1 0 1.5708
+          }
+        ]
+        name "sensor_disc"
+      }
+    }
+    Accelerometer {
+    }
+    Gyro {
+    }
+  ]
+  boundingObject USE BODY
+  physics Physics {
+    density -1
+    mass 2
+  }
+  controller "my_controller"
+}

@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FieldBot — Field Analytics Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* ── Reset & tokens ─────────────────────────────────────────── */
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0d1117; --surface:#161b22; --surface2:#1c2128;
+      --border:#30363d; --accent:#3fb950; --accent2:#58a6ff;
+      --warn:#d29922; --danger:#f85149; --purple:#bc8cff;
+      --text:#e6edf3; --muted:#8b949e; --muted2:#6e7681;
+    }
+    body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+    /* ── Config modal (shown on first load) ─────────────────────── */
+    #configModal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;display:flex;align-items:center;justify-content:center}
+    #configModal.hidden{display:none}
+    .config-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px;width:520px;max-width:94vw}
+    .config-box h2{font-size:1.2rem;margin-bottom:6px;color:var(--accent2)}
+    .config-box p{font-size:.82rem;color:var(--muted);margin-bottom:20px;line-height:1.5}
+    .config-box textarea{width:100%;height:220px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:monospace;font-size:.8rem;padding:10px;resize:vertical}
+    .config-box .err{color:var(--danger);font-size:.78rem;margin-top:6px;min-height:18px}
+    .config-btn{margin-top:14px;background:var(--accent2);color:#fff;border:none;border-radius:7px;padding:10px 22px;cursor:pointer;font-size:.9rem;font-weight:600}
+    .config-btn:hover{opacity:.85}
+
+    /* ── Header ─────────────────────────────────────────────────── */
+    header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;gap:14px;flex-shrink:0}
+    .logo{font-size:1.1rem;font-weight:700;color:var(--accent);letter-spacing:.5px}
+    .logo span{color:var(--muted);font-weight:400}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+    .hdr-spacer{flex:1}
+    .hdr-stat{text-align:center;padding:0 14px;border-left:1px solid var(--border)}
+    .hdr-stat-val{font-size:.95rem;font-weight:700;color:var(--accent2)}
+    .hdr-stat-lbl{font-size:.65rem;color:var(--muted)}
+    #configBtn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:5px 12px;cursor:pointer;font-size:.78rem}
+    #configBtn:hover{color:var(--text)}
+
+    /* ── Layout ─────────────────────────────────────────────────── */
+    .app-body{display:flex;flex:1;min-height:0}
+    .sidebar{width:260px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column}
+    .sidebar-hdr{padding:12px 14px;font-size:.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid var(--border)}
+    .session-list{flex:1;overflow-y:auto;padding:8px 0}
+    .session-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s}
+    .session-item:hover{background:var(--surface2)}
+    .session-item.active{background:#1c2f1f;border-left:3px solid var(--accent)}
+    .sess-date{font-size:.78rem;font-weight:600;color:var(--text)}
+    .sess-meta{font-size:.7rem;color:var(--muted);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap}
+    .sess-badge{padding:1px 6px;border-radius:10px;font-size:.65rem;font-weight:600}
+    .sess-badge.active{background:#1a2f1a;color:var(--accent)}
+    .sess-badge.complete{background:#1c2128;color:var(--muted)}
+    .sess-badge.disease{background:#3b1a1a;color:var(--danger)}
+
+    /* ── Main content ────────────────────────────────────────────── */
+    .main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+    .main-scroll{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px}
+
+    /* ── Cards ──────────────────────────────────────────────────── */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px}
+    .card-title{font-size:.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px}
+
+    /* ── Stats row ──────────────────────────────────────────────── */
+    .stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+    .stat{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px 10px;text-align:center}
+    .stat-val{font-size:1.5rem;font-weight:700}
+    .stat-val.green{color:var(--accent)}
+    .stat-val.blue{color:var(--accent2)}
+    .stat-val.warn{color:var(--warn)}
+    .stat-val.danger{color:var(--danger)}
+    .stat-lbl{font-size:.68rem;color:var(--muted);margin-top:2px}
+
+    /* ── Two-column row ─────────────────────────────────────────── */
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+
+    /* ── Map ────────────────────────────────────────────────────── */
+    .map-wrap{position:relative;height:320px}
+    canvas#mapCanvas{width:100%;height:100%;display:block;border-radius:6px;background:var(--surface2)}
+    .map-legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+    .leg-item{display:flex;align-items:center;gap:4px;font-size:.7rem;color:var(--muted)}
+    .leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+    /* ── Chart containers ───────────────────────────────────────── */
+    .chart-wrap{position:relative;height:160px}
+
+    /* ── Sample gallery ─────────────────────────────────────────── */
+    .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+    .sample-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;cursor:pointer;transition:border-color .15s,transform .1s}
+    .sample-card:hover{border-color:var(--accent2);transform:translateY(-1px)}
+    .sample-card.diseased{border-color:var(--danger)}
+    .sc-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+    .sc-id{font-size:.75rem;font-weight:600;color:var(--accent2)}
+    .sc-tag{font-size:.62rem;padding:2px 6px;border-radius:9px;font-weight:600}
+    .sc-tag.ok{background:#1a2f1a;color:var(--accent)}
+    .sc-tag.bad{background:#3b1a1a;color:var(--danger)}
+    .sc-img{width:100%;height:90px;object-fit:cover;border-radius:5px;background:var(--bg);display:block}
+    .sc-img-ph{width:100%;height:90px;background:var(--bg);border-radius:5px;display:flex;align-items:center;justify-content:center;color:var(--muted2);font-size:.7rem}
+    .sc-readings{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-top:6px;font-size:.68rem;color:var(--muted)}
+    .sc-pos{font-size:.68rem;color:var(--muted2);margin-top:4px}
+
+    /* ── Sample detail modal ────────────────────────────────────── */
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:flex;align-items:center;justify-content:center}
+    .modal-bg.hidden{display:none}
+    .modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:720px;max-width:95vw;max-height:88vh;overflow-y:auto;padding:22px}
+    .modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+    .modal-title{font-size:1rem;font-weight:700}
+    .modal-close{background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;padding:0 4px}
+    .modal-close:hover{color:var(--text)}
+    .modal-imgs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+    .modal-img{width:100%;border-radius:7px;border:1px solid var(--border);min-height:140px;object-fit:cover;background:var(--bg)}
+    .img-lbl{font-size:.7rem;color:var(--muted);margin-top:4px}
+    .modal-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+    .ms{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px;text-align:center}
+    .ms-val{font-size:1.05rem;font-weight:700;color:var(--accent2)}
+    .ms-lbl{font-size:.65rem;color:var(--muted)}
+    .ai-box{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:11px;margin-top:4px}
+    .ai-box-title{font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:5px}
+    .ai-row{display:flex;align-items:center;gap:8px;font-size:.8rem}
+    .ai-label{flex:1;font-weight:500}
+    .ai-conf{color:var(--muted);font-size:.75rem}
+
+    /* ── Empty state ─────────────────────────────────────────────── */
+    .empty{text-align:center;padding:60px 20px;color:var(--muted)}
+    .empty h3{font-size:1rem;margin-bottom:6px;color:var(--text)}
+    .empty p{font-size:.82rem}
+
+    /* ── Scrollbar ──────────────────────────────────────────────── */
+    ::-webkit-scrollbar{width:4px;height:4px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  </style>
+</head>
+<body>
+
+<!-- ── Firebase Config Modal ──────────────────────────────────────── -->
+<div id="configModal">
+  <div class="config-box">
+    <h2>🔑 Firebase Configuration</h2>
+    <p>
+      Paste your Firebase <strong>web app config</strong> below.<br>
+      Find it in: <strong>Firebase Console → Project Settings → Your Apps → Web App → Config</strong><br>
+      This is stored in your browser's localStorage — you only need to do this once.
+    </p>
+    <textarea id="configInput" spellcheck="false">{
+  "apiKey": "",
+  "authDomain": "",
+  "projectId": "",
+  "storageBucket": "",
+  "messagingSenderId": "",
+  "appId": ""
+}</textarea>
+    <div class="err" id="configErr"></div>
+    <button class="config-btn" onclick="saveConfig()">Connect to Firebase</button>
+  </div>
+</div>
+
+<!-- ── Header ──────────────────────────────────────────────────────── -->
+<header>
+  <div class="logo">🌿 FieldBot <span>Analytics</span></div>
+  <div class="hdr-spacer"></div>
+  <div class="hdr-stat"><div class="hdr-stat-val" id="hdrSessions">–</div><div class="hdr-stat-lbl">Sessions</div></div>
+  <div class="hdr-stat"><div class="hdr-stat-val" id="hdrSamples">–</div><div class="hdr-stat-lbl">Total Samples</div></div>
+  <div class="hdr-stat"><div class="hdr-stat-val" id="hdrDiseases">–</div><div class="hdr-stat-lbl">Disease Hits</div></div>
+  <div id="robotStatusBar" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 14px;font-size:.78rem;display:flex;gap:14px;align-items:center">
+    <span style="color:var(--muted)">Robot:</span>
+    <span id="liveState" style="font-weight:700;color:var(--accent)">–</span>
+    <span id="liveBatt" style="color:var(--warn)">–%</span>
+    <span id="livePos" style="color:var(--muted)">–</span>
+    <span id="liveCov" style="color:var(--accent2)">–%</span>
+    <span id="liveUpdated" style="color:var(--muted2);font-size:.68rem">–</span>
+  </div>
+  <button id="configBtn" onclick="resetConfig()">⚙ Reconfigure</button>
+  <button class="ctrl-btn btn-stop"  id="btnStop"  onclick="sendCommand('stop')"  disabled title="Return robot to dock">⏹ Stop</button>
+  <button class="ctrl-btn btn-start" id="btnStart" onclick="sendCommand('start')" disabled title="Resume field run">▶ Start</button>
+</header>
+
+<!-- ── App body ─────────────────────────────────────────────────────── -->
+<div class="app-body">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-hdr">Sessions</div>
+    <div class="session-list" id="sessionList">
+      <div class="empty"><p>Loading…</p></div>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main">
+    <div class="main-scroll" id="mainContent">
+      <div class="empty">
+        <h3>Select a session</h3>
+        <p>Choose a session from the sidebar to view its data.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Sample Detail Modal ──────────────────────────────────────────── -->
+<div class="modal-bg hidden" id="sampleModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title" id="modalTitle">Sample</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<!-- ── Firebase JS SDK (modular v10) ───────────────────────────────── -->
+<script type="module">
+import { initializeApp }                                   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, onSnapshot,
+         query, orderBy, getDocs, getDoc, setDoc }          from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// Firebase Storage is not used — images are stored as base64 in Firestore
+
+// ─────────────────────────────────────────────────────────────────────
+// Config persistence
+// ─────────────────────────────────────────────────────────────────────
+const STORAGE_KEY = "fieldbot_firebase_config";
+const ROBOT_ID_KEY = "fieldbot_robot_id";
+
+function loadStoredConfig() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch { return null; }
+}
+
+window.saveConfig = function() {
+  const raw = document.getElementById("configInput").value.trim();
+  const err = document.getElementById("configErr");
+  try {
+    const cfg = JSON.parse(raw);
+    if (!cfg.apiKey || !cfg.projectId) throw new Error("apiKey and projectId are required");
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+    document.getElementById("configModal").classList.add("hidden");
+    err.textContent = "";
+    initFirebase(cfg);
+  } catch(e) {
+    err.textContent = "Invalid JSON or missing fields: " + e.message;
+  }
+};
+
+window.resetConfig = function() {
+  const stored = loadStoredConfig();
+  if (stored) document.getElementById("configInput").value = JSON.stringify(stored, null, 2);
+  document.getElementById("configModal").classList.remove("hidden");
+};
+
+// ─────────────────────────────────────────────────────────────────────
+// Firebase state
+// ─────────────────────────────────────────────────────────────────────
+let db;   // Firestore client — Storage not used
+let activeSessionId = null;
+let allSessions     = [];    // [{id, data}]
+let allSamples      = [];    // for currently selected session
+let samplesUnsub    = null;  // Firestore listener cleanup
+let sessionsUnsub   = null;
+
+let _currentGrid   = null;   // grid/current doc from Firestore
+let _lastGridData  = null;   // last grid passed to drawMap (for redraws)
+let _liveRobotStatus = null; // latest status push from robot
+
+// chart instances
+let chartEnv = null, chartSoil = null, chartDis = null;
+
+function initFirebase(cfg) {
+  try {
+    const app = initializeApp(cfg);
+    db   = getFirestore(app);
+    // No Storage init — images come from Firestore as base64
+    subscribeToSessions();
+    subscribeToRobotStatus();
+    subscribeToGrid();
+  } catch(e) {
+    document.getElementById("configErr").textContent = "Firebase init failed: " + e.message;
+    document.getElementById("configModal").classList.remove("hidden");
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Sessions listener (real-time)
+// ─────────────────────────────────────────────────────────────────────
+function subscribeToSessions() {
+  // ROBOT_ID must match config.py → ROBOT_ID
+  const robotId   = localStorage.getItem(ROBOT_ID_KEY) || "fieldbot-01";
+  const sessCol   = collection(db, "robots", robotId, "sessions");
+  const sessQuery = query(sessCol, orderBy("started_at", "desc"));
+
+  if (sessionsUnsub) sessionsUnsub();
+  sessionsUnsub = onSnapshot(sessQuery, snap => {
+    allSessions = snap.docs.map(d => ({ id: d.id, data: d.data() }));
+    renderSidebar();
+    updateHeaderStats();
+  }, err => console.warn("Sessions listener:", err));
+}
+
+function subscribeToGrid() {
+  // The grid is stored at robots/{ROBOT_ID}/grid/current — NOT inside the
+  // session document.  Subscribe so we always have the latest grid data,
+  // and redraw the map whenever it arrives or updates.
+  const robotId = localStorage.getItem(ROBOT_ID_KEY) || "fieldbot-01";
+  const gridDoc = doc(db, "robots", robotId, "grid", "current");
+  onSnapshot(gridDoc, snap => {
+    if (snap.exists()) {
+      _currentGrid = snap.data();
+      // Redraw immediately if a session is already displayed
+      if (activeSessionId && _currentGrid) {
+        requestAnimationFrame(() => drawMap(_currentGrid, allSamples));
+      }
+    }
+  }, err => console.warn("Grid listener:", err));
+}
+
+function subscribeToRobotStatus() {
+  const robotId = localStorage.getItem(ROBOT_ID_KEY) || "fieldbot-01";
+  const statusDoc = doc(db, "robots", robotId, "status", "current");
+  onSnapshot(statusDoc, snap => {
+    if (!snap.exists()) return;
+    const s = snap.data();
+    const bar = document.getElementById("robotStatusBar");
+    if (bar) bar.style.display = "flex";
+
+    // State badge with colour coding
+    const stateEl = document.getElementById("liveState");
+    if (stateEl) {
+      const stateColors = {
+        MOWING:"var(--accent)", SAMPLING:"var(--purple)",
+        AVOIDING:"var(--warn)", STUCK:"var(--warn)",
+        RETURN:"var(--accent2)", DOCKING:"var(--accent2)",
+        CHARGING:"#60a5fa", DONE:"var(--muted)",
+        GO_TO_START:"var(--accent)", INIT:"var(--muted)"
+      };
+      stateEl.textContent = s.state || "–";
+      stateEl.style.color = stateColors[s.state] || "var(--text)";
+    }
+
+    const battEl = document.getElementById("liveBatt");
+    if (battEl) {
+      const bPct = (s.battery_pct || 0).toFixed(0);
+      battEl.textContent = bPct + "%";
+      battEl.style.color = bPct < 30 ? "var(--danger)" : bPct < 50 ? "var(--warn)" : "var(--accent)";
+    }
+
+    const posEl = document.getElementById("livePos");
+    if (posEl) posEl.textContent =
+      "(" + (s.pos_x||0).toFixed(2) + ", " + (s.pos_y||0).toFixed(2) + ")m";
+
+    const covEl = document.getElementById("liveCov");
+    if (covEl) covEl.textContent = (s.coverage_pct||0).toFixed(0) + "% cov";
+    // Update Stop/Start button state to match current robot state
+    updateButtons(s.state || "");
+
+    const updEl = document.getElementById("liveUpdated");
+    if (updEl && s.updated_at) {
+      const age = Math.round(Date.now()/1000 - s.updated_at);
+      updEl.textContent = age < 5 ? "just now" : age + "s ago";
+    }
+
+    // If there is an active session selected, update the map robot position
+    if (activeSessionId) _updateLiveRobotOnMap(s);
+  }, err => console.warn("Status listener:", err));
+}
+
+// Keep a reference to live robot position for map overlay
+function _updateLiveRobotOnMap(s) {
+  _liveRobotStatus = s;
+  // Redraw map if it exists (it will include the updated robot arrow)
+  const canvas = document.getElementById("mapCanvas");
+  if (canvas && _lastGridData) drawMap(_lastGridData, allSamples);
+}
+
+// Store last grid data for live redraws
+
+function renderSidebar() {
+  const el = document.getElementById("sessionList");
+  if (!allSessions.length) {
+    el.innerHTML = `<div class="empty"><p>No sessions yet.<br>Run the robot to see data here.</p></div>`;
+    return;
+  }
+  el.innerHTML = allSessions.map(s => {
+    const d    = s.data;
+    const date = d.started_at ? new Date(d.started_at * 1000).toLocaleString() : "–";
+    const isActive   = d.status === "active";
+    const diseaseHit = (d.sample_count > 0) && allSamples.some?.(x => x.disease_detected);
+    return `
+      <div class="session-item ${s.id === activeSessionId ? 'active' : ''}"
+           onclick="selectSession('${s.id}')">
+        <div class="sess-date">${date}</div>
+        <div class="sess-meta">
+          <span>${d.sample_count || 0} samples</span>
+          <span>${(d.coverage_pct || 0).toFixed(0)}% coverage</span>
+          <span class="sess-badge ${isActive ? 'active' : 'complete'}">${isActive ? '● LIVE' : '✓ done'}</span>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function updateHeaderStats() {
+  document.getElementById("hdrSessions").textContent  = allSessions.length;
+  const total = allSessions.reduce((a,s) => a + (s.data.sample_count || 0), 0);
+  document.getElementById("hdrSamples").textContent   = total;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Session selection
+// ─────────────────────────────────────────────────────────────────────
+window.selectSession = function(sessionId) {
+  if (samplesUnsub) samplesUnsub();
+  activeSessionId = sessionId;
+  allSamples      = [];
+  renderSidebar();
+  showLoading();
+  subscribeToSamples(sessionId);
+};
+
+function subscribeToSamples(sessionId) {
+  const robotId  = localStorage.getItem(ROBOT_ID_KEY) || "fieldbot-01";
+  const sampCol  = collection(db, "robots", robotId, "sessions", sessionId, "samples");
+  const sampQuery = query(sampCol, orderBy("timestamp", "asc"));
+
+  samplesUnsub = onSnapshot(sampQuery, snap => {
+    allSamples = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const sessionData = allSessions.find(s => s.id === sessionId)?.data || {};
+    renderMain(sessionId, sessionData, allSamples);
+  }, err => console.warn("Samples listener:", err));
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Main content rendering
+// ─────────────────────────────────────────────────────────────────────
+function showLoading() {
+  document.getElementById("mainContent").innerHTML =
+    `<div class="empty"><p>Loading session data…</p></div>`;
+}
+
+function renderMain(sessionId, sessionData, samples) {
+  const diseased = samples.filter(s => s.disease_detected);
+  const avgTemp  = avg(samples, "temperature_c");
+  const avgHum   = avg(samples, "humidity_pct");
+  const avgSoil  = avg(samples, "soil_moisture");
+  const dur      = sessionData.ended_at
+    ? fmtDuration(sessionData.started_at, sessionData.ended_at)
+    : sessionData.started_at ? fmtDuration(sessionData.started_at, Date.now()/1000) : "–";
+
+  document.getElementById("mainContent").innerHTML = `
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val green">${(sessionData.coverage_pct||0).toFixed(0)}%</div><div class="stat-lbl">Coverage</div></div>
+      <div class="stat"><div class="stat-val blue">${samples.length}</div><div class="stat-lbl">Samples</div></div>
+      <div class="stat"><div class="stat-val ${diseased.length > 0 ? 'danger' : 'green'}">${diseased.length}</div><div class="stat-lbl">Disease Hits</div></div>
+      <div class="stat"><div class="stat-val warn">${avgTemp.toFixed(1)}°C</div><div class="stat-lbl">Avg Temp</div></div>
+      <div class="stat"><div class="stat-val">${dur}</div><div class="stat-lbl">Duration</div></div>
+    </div>
+
+    <!-- Map + Disease summary -->
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Field Coverage Map</div>
+        <div class="map-wrap"><canvas id="mapCanvas"></canvas></div>
+        <div class="map-legend">
+          <div class="leg-item"><div class="leg-dot" style="background:#166534"></div>Mowed</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#1e293b"></div>Unknown</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#7f1d1d"></div>Obstacle</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#58a6ff;border-radius:50%"></div>Sample</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#f85149;border-radius:50%"></div>Disease</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Disease Detection Summary</div>
+        ${renderDiseaseSummary(diseased, samples.length)}
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="three-col">
+      <div class="card">
+        <div class="card-title">Temperature (°C)</div>
+        <div class="chart-wrap"><canvas id="chartTemp"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Humidity (%RH)</div>
+        <div class="chart-wrap"><canvas id="chartHum"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Soil Moisture</div>
+        <div class="chart-wrap"><canvas id="chartSoil"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Sample gallery -->
+    <div class="card">
+      <div class="card-title">Sample Gallery (${samples.length})</div>
+      <div class="gallery" id="gallery">
+        ${samples.length === 0
+          ? '<div class="empty"><p>No samples yet.</p></div>'
+          : samples.map(s => renderCard(s)).join("")}
+      </div>
+    </div>
+  `;
+
+  // Update header disease count
+  document.getElementById("hdrDiseases").textContent = diseased.length;
+
+  // Draw map — grid is stored at robots/{id}/grid/current, not in
+  // the session document, so use _currentGrid fetched by subscribeToGrid().
+  const gridForMap = _currentGrid || sessionData.grid || null;
+  if (gridForMap) {
+    requestAnimationFrame(() => drawMap(gridForMap, samples));
+  } else {
+    _lastGridData = null;
+    // No grid available yet — a subscribeToGrid() update will draw it
+    // automatically once the data arrives from Firestore.
+  }
+
+  // Draw charts
+  requestAnimationFrame(() => {
+    drawLineChart("chartTemp", samples, "temperature_c", "#f97316", "°C");
+    drawLineChart("chartHum",  samples, "humidity_pct",  "#60a5fa", "%");
+    drawLineChart("chartSoil", samples, "soil_moisture", "#4ade80", "");
+  });
+
+}   // end renderMain
+
+// ─────────────────────────────────────────────────────────────────────
+// Disease summary panel
+// ─────────────────────────────────────────────────────────────────────
+function renderDiseaseSummary(diseased, total) {
+  if (!diseased.length) {
+    return `<div style="text-align:center;padding:40px 0;color:var(--accent)">
+      <div style="font-size:2.5rem">✅</div>
+      <div style="font-size:1rem;font-weight:600;margin-top:8px">No Disease Detected</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-top:4px">${total} samples analysed</div>
+    </div>`;
+  }
+
+  // Count by disease label
+  const counts = {};
+  for (const s of diseased) {
+    const lbl = s.disease_summary?.split("(")[0]?.trim() || "Unknown";
+    counts[lbl] = (counts[lbl] || 0) + 1;
+  }
+  const rows = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+  const pct  = ((diseased.length / total) * 100).toFixed(0);
+
+  return `
+    <div style="margin-bottom:10px;padding:10px;background:var(--bg);border-radius:7px;border:1px solid var(--border)">
+      <div style="font-size:1.4rem;font-weight:700;color:var(--danger)">${pct}%</div>
+      <div style="font-size:.75rem;color:var(--muted)">${diseased.length} of ${total} samples</div>
+    </div>
+    ${rows.map(([lbl, cnt]) => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:.82rem">
+        <span style="color:var(--danger)">⚠ ${lbl}</span>
+        <span style="background:#3b1a1a;color:var(--danger);padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:600">${cnt} hit${cnt>1?'s':''}</span>
+      </div>`).join("")}
+    <div style="margin-top:12px">
+      ${diseased.slice(0,3).map(s => `
+        <div style="font-size:.72rem;color:var(--muted);padding:3px 0">
+          📍 (${(s.pos_x||0).toFixed(2)}, ${(s.pos_y||0).toFixed(2)}) — ${s.disease_summary||""}
+        </div>`).join("")}
+      ${diseased.length > 3 ? `<div style="font-size:.7rem;color:var(--muted2)">+${diseased.length-3} more</div>` : ""}
+    </div>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Field map (Canvas)
+// ─────────────────────────────────────────────────────────────────────
+function drawMap(grid, samples) {
+  _lastGridData = grid;   // store for live robot position redraws
+  const canvas = document.getElementById("mapCanvas");
+  if (!canvas) return;
+  const wrap = canvas.parentElement;
+  // Read layout size; offsetWidth/Height are reliable fallbacks
+  // if clientWidth is 0 during the first requestAnimationFrame.
+  canvas.width  = wrap.clientWidth  || wrap.offsetWidth  || 600;
+  canvas.height = wrap.clientHeight || wrap.offsetHeight || 320;
+  const ctx  = canvas.getContext("2d");
+  const cols = grid.cols, rows = grid.rows;
+  const cW   = canvas.width / cols, cH = canvas.height / rows;
+
+  // Firestore stores cells as a flat 1D array (nested arrays are not
+  // supported).  Rebuild the 2D structure if needed so grid.cells[r][c] works.
+  if (!grid.cells && grid.cells_flat) {
+    grid.cells = [];
+    for (let r = 0; r < rows; r++) {
+      grid.cells.push(grid.cells_flat.slice(r * cols, (r + 1) * cols));
+    }
+  }
+  if (!grid.cells) return;   // no cell data at all — skip draw
+
+  const FIELD = {
+    minX: -(grid.cols * grid.cell_size) / 2,
+    minY: -(grid.rows * grid.cell_size) / 2,
+    w: grid.cols * grid.cell_size,
+    h: grid.rows * grid.cell_size,
+  };
+
+  // Fill canvas background first so UNKNOWN cells are visible
+  ctx.fillStyle = "#0d1520";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const v = grid.cells[r][c];
+      // UNKNOWN #253045 (visible but muted), VISITED #166534, OBSTACLE #7f1d1d
+      ctx.fillStyle = v === 1 ? "#166534" : v === -1 ? "#7f1d1d" : "#253045";
+      ctx.fillRect(c*cW + 0.5, (rows-1-r)*cH + 0.5, cW-1, cH-1);
+    }
+  }
+
+  const wx = x => ((x - FIELD.minX) / FIELD.w) * canvas.width;
+  const wy = y => (1 - (y - FIELD.minY) / FIELD.h) * canvas.height;
+
+  for (const s of samples) {
+    const px = wx(s.pos_x||0), py = wy(s.pos_y||0);
+    ctx.beginPath();
+    ctx.arc(px, py, Math.max(4, cW * 0.38), 0, 2*Math.PI);
+    ctx.fillStyle   = s.disease_detected ? "#f85149" : "#58a6ff";
+    ctx.strokeStyle = "rgba(255,255,255,0.5)";
+    ctx.lineWidth   = 1;
+    ctx.fill(); ctx.stroke();
+  }
+
+  // Live robot position (from status listener)
+  if (_liveRobotStatus && _liveRobotStatus.pos_x !== undefined) {
+    const rx = wx(_liveRobotStatus.pos_x);
+    const ry = wy(_liveRobotStatus.pos_y);
+    const th = (_liveRobotStatus.heading_deg || 0) * Math.PI / 180;
+    ctx.save();
+    ctx.translate(rx, ry);
+    ctx.rotate(-th);
+    // Arrow body
+    ctx.beginPath();
+    ctx.moveTo(0, -11); ctx.lineTo(7, 7); ctx.lineTo(0, 3); ctx.lineTo(-7, 7);
+    ctx.closePath();
+    ctx.fillStyle = "#facc15";
+    ctx.shadowColor = "#facc15"; ctx.shadowBlur = 8;
+    ctx.fill();
+    ctx.restore();
+    // Label
+    ctx.fillStyle = "rgba(250,204,21,0.85)";
+    ctx.font = "bold 10px sans-serif";
+    ctx.fillText(_liveRobotStatus.state || "", rx + 9, ry - 5);
+  }
+
+  // Grid lines
+  ctx.strokeStyle = "rgba(255,255,255,0.04)"; ctx.lineWidth = 0.5;
+  for (let c = 0; c <= cols; c++) { ctx.beginPath(); ctx.moveTo(c*cW, 0); ctx.lineTo(c*cW, canvas.height); ctx.stroke(); }
+  for (let r = 0; r <= rows; r++) { ctx.beginPath(); ctx.moveTo(0, r*cH); ctx.lineTo(canvas.width, r*cH); ctx.stroke(); }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Line charts (Chart.js)
+// ─────────────────────────────────────────────────────────────────────
+function drawLineChart(canvasId, samples, field, color, unit) {
+  const el = document.getElementById(canvasId);
+  if (!el) return;
+  const existing = Chart.getChart(el);
+  if (existing) existing.destroy();
+
+  const labels = samples.map((_, i) => `S${i+1}`);
+  const data   = samples.map(s => parseFloat((s[field]||0).toFixed(2)));
+
+  new Chart(el, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        data, borderColor: color, backgroundColor: color + "22",
+        borderWidth: 2, pointRadius: 3, pointHoverRadius: 5,
+        fill: true, tension: 0.35,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: ctx => `${ctx.parsed.y}${unit}` } } },
+      scales: {
+        x: { grid: { color: "#30363d" }, ticks: { color: "#8b949e", font: { size: 10 } } },
+        y: { grid: { color: "#30363d" }, ticks: { color: "#8b949e", font: { size: 10 } } },
+      },
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Sample card HTML
+// ─────────────────────────────────────────────────────────────────────
+function renderCard(s) {
+  const tag = s.disease_detected
+    ? `<span class="sc-tag bad">⚠ Disease</span>`
+    : `<span class="sc-tag ok">✓ OK</span>`;
+  // Embed base64 image directly — no separate DOM lookup needed
+  const b64     = s.image_front_b64 || s.image_back_b64 || "";
+  const imgHtml = b64
+    ? `<img class="sc-img" src="data:image/jpeg;base64,${b64}"
+           alt="leaf" loading="lazy"
+           onerror="this.outerHTML='<div class=sc-img-ph>Image error</div>'">`
+    : `<div class="sc-img-ph">No image</div>`;
+  return `
+    <div class="sample-card ${s.disease_detected ? 'diseased' : ''}" onclick="showSample('${s.sample_id}')">
+      <div class="sc-header">
+        <span class="sc-id">${s.sample_id}</span>${tag}
+      </div>
+      ${imgHtml}
+      <div class="sc-readings">
+        <span>🌡 ${(s.temperature_c||0).toFixed(1)}°C</span>
+        <span>💧 ${(s.humidity_pct||0).toFixed(0)}%</span>
+        <span>🌱 ${s.soil_moisture||0}</span>
+        <span>☀️ ${(s.lux_at_probe||0).toFixed(0)}lx</span>
+      </div>
+      <div class="sc-pos">📍 (${(s.pos_x||0).toFixed(2)}, ${(s.pos_y||0).toFixed(2)}) m</div>
+    </div>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Sample detail modal
+// ─────────────────────────────────────────────────────────────────────
+window.showSample = async function(sampleId) {
+  const s = allSamples.find(x => x.sample_id === sampleId);
+  if (!s) return;
+
+  document.getElementById("modalTitle").textContent =
+    `Sample ${s.sample_id} — ${new Date((s.timestamp||0)*1000).toLocaleString()}`;
+
+  // Build HTML skeleton first
+  document.getElementById("modalBody").innerHTML = `
+    <div class="modal-imgs">
+      <div>
+        <img class="modal-img" id="modal-img-front" src="" alt="front" style="display:none">
+        <div id="modal-ph-front" style="min-height:140px;background:var(--bg);border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.8rem">Loading…</div>
+        <div class="img-lbl">📷 Front view</div>
+      </div>
+      <div>
+        <img class="modal-img" id="modal-img-back" src="" alt="back" style="display:none">
+        <div id="modal-ph-back" style="min-height:140px;background:var(--bg);border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.8rem">Loading…</div>
+        <div class="img-lbl">📷 Back view</div>
+      </div>
+    </div>
+    <div class="modal-stats">
+      <div class="ms"><div class="ms-val">${(s.temperature_c||0).toFixed(1)}°C</div><div class="ms-lbl">Temperature</div></div>
+      <div class="ms"><div class="ms-val">${(s.humidity_pct||0).toFixed(1)}%</div><div class="ms-lbl">Humidity</div></div>
+      <div class="ms"><div class="ms-val">${s.soil_moisture||0}</div><div class="ms-lbl">Soil Moisture</div></div>
+      <div class="ms"><div class="ms-val">${(s.lux_at_probe||0).toFixed(1)}</div><div class="ms-lbl">Lux @ Probe</div></div>
+      <div class="ms"><div class="ms-val">${(s.soil_temp_c||0).toFixed(1)}°C</div><div class="ms-lbl">Soil Temp</div></div>
+      <div class="ms"><div class="ms-val">${(s.probe_time_s||0).toFixed(1)}s</div><div class="ms-lbl">Probe Depth Time</div></div>
+    </div>
+    <div class="ai-box">
+      <div class="ai-box-title">AI Disease Analysis</div>
+      ${renderAIResult(s.ai_front, "Front image")}
+      ${renderAIResult(s.ai_back,  "Back image")}
+      <div style="margin-top:8px;padding:7px;background:${s.disease_detected ? '#3b1a1a' : '#1a2f1a'};border-radius:6px;font-size:.82rem;color:${s.disease_detected ? 'var(--danger)' : 'var(--accent)'}">
+        ${s.disease_detected ? '⚠️ ' + (s.disease_summary||'Disease detected') : '✅ No disease detected'}
+      </div>
+    </div>
+    <div style="margin-top:10px;font-size:.72rem;color:var(--muted)">
+      Position: (${(s.pos_x||0).toFixed(3)}, ${(s.pos_y||0).toFixed(3)}) m ·
+      Heading: ${(s.heading_deg||0).toFixed(1)}°
+    </div>
+  `;
+
+  document.getElementById("sampleModal").classList.remove("hidden");
+
+  // Load images from base64 strings stored in Firestore
+  for (const [b64Key, imgId, phId, label] of [
+    ["image_front_b64", "modal-img-front", "modal-ph-front", "front"],
+    ["image_back_b64",  "modal-img-back",  "modal-ph-back",  "back"],
+  ]) {
+    const b64   = s[b64Key];
+    const imgEl = document.getElementById(imgId);
+    const phEl  = document.getElementById(phId);
+    if (b64 && imgEl && phEl) {
+      imgEl.src = `data:image/jpeg;base64,${b64}`;
+      imgEl.style.display = "block";
+      phEl.style.display  = "none";
+    } else if (phEl) {
+      phEl.textContent = "No image";
+    }
+  }
+};
+
+function renderAIResult(ai, label) {
+  if (!ai) return `<div class="ai-row" style="margin-bottom:4px"><span style="color:var(--muted2)">${label}: –</span></div>`;
+  const col = ai.is_diseased ? "var(--danger)" : ai.is_leaf ? "var(--accent)" : "var(--muted)";
+  const txt = ai.is_leaf
+    ? `${ai.disease_label} (${(ai.disease_conf*100).toFixed(0)}%)`
+    : "Not a leaf";
+  return `
+    <div class="ai-row" style="margin-bottom:4px">
+      <span class="ai-label">${label}:</span>
+      <span style="color:${col}">${txt}</span>
+      <span class="ai-conf">leaf ${(ai.leaf_conf*100||0).toFixed(0)}%</span>
+    </div>`;
+}
+
+window.closeModal = function() {
+  document.getElementById("sampleModal").classList.add("hidden");
+};
+
+document.getElementById("sampleModal").addEventListener("click", e => {
+  if (e.target === e.currentTarget) window.closeModal();
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// Utility
+// ─────────────────────────────────────────────────────────────────────
+function avg(arr, key) {
+  if (!arr.length) return 0;
+  return arr.reduce((s, x) => s + (x[key]||0), 0) / arr.length;
+}
+
+function fmtDuration(t0, t1) {
+  const secs = Math.round(t1 - t0);
+  if (secs < 60)   return `${secs}s`;
+  if (secs < 3600) return `${Math.floor(secs/60)}m`;
+  return `${(secs/3600).toFixed(1)}h`;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Remote commands (Stop / Start)
+// ─────────────────────────────────────────────────────────────────────
+window.sendCommand = async function(cmd) {
+  const robotId = localStorage.getItem(ROBOT_ID_KEY) || "fieldbot-01";
+  const cmdRef  = doc(db, "robots", robotId, "commands", "control");
+  try {
+    await setDoc(cmdRef, {
+      command:      cmd,
+      issued_at:    Date.now() / 1000,
+      acknowledged: false,
+    });
+    console.log("Command sent:", cmd);
+    // Optimistic UI feedback — buttons update properly when status refreshes
+    document.getElementById("btnStop").disabled  = true;
+    document.getElementById("btnStart").disabled = true;
+  } catch (e) {
+    console.error("Failed to send command:", e);
+    alert("Could not send command to Firebase: " + e.message);
+  }
+};
+
+function updateButtons(robotState) {
+  const stopEl  = document.getElementById("btnStop");
+  const startEl = document.getElementById("btnStart");
+  if (!stopEl || !startEl) return;
+  // States where the robot can be stopped
+  const stoppable = new Set([
+    "GO_TO_START", "MOWING", "SAMPLING", "AVOIDING", "STUCK"
+  ]);
+  // Only PAUSED allows a Start command
+  stopEl.disabled  = !stoppable.has(robotState);
+  startEl.disabled = robotState !== "PAUSED";
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Boot
+// ─────────────────────────────────────────────────────────────────────
+const stored = loadStoredConfig();
+if (stored && stored.apiKey && stored.projectId) {
+  document.getElementById("configModal").classList.add("hidden");
+  initFirebase(stored);
+} else {
+  // Pre-fill textarea with template
+  document.getElementById("configInput").value = JSON.stringify({
+    apiKey: "", authDomain: "", projectId: "",
+    messagingSenderId: "", appId: ""
+  }, null, 2);
+}
+</script>
+</body>
+</html>

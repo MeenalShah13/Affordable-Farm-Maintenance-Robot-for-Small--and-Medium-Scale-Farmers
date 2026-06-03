@@ -1,0 +1,38 @@
+# FieldBot — Raspberry Pi dependencies
+# Install: pip3 install -r requirements.txt --break-system-packages
+#
+# NOTE: Flask is NOT listed here. The web dashboard runs on the laptop
+# (see laptop_dashboard/requirements.txt). The Pi only talks to Firebase.
+
+# ── PCA9685 + sensor libraries (from integ2.py) ─────────────────────
+adafruit-circuitpython-pca9685
+adafruit-circuitpython-tsl2561
+adafruit-circuitpython-lsm6ds
+adafruit-circuitpython-ads1x15
+adafruit-circuitpython-seesaw
+adafruit-circuitpython-htu21d
+
+# ── GPIO ─────────────────────────────────────────────────────────────
+gpiozero
+RPi.GPIO
+
+# ── I2C (battery fuel gauge — MAX17040 on x120x UPS HAT) ────────────
+# smbus2 is used to read the MAX17040 at I²C 0x36.
+# gpiozero handles GPIO 6 (PLD / AC-detect) and GPIO 16 (charge control).
+# Both are already listed above — no additional packages needed.
+smbus2
+
+# ── AI / image processing ────────────────────────────────────────────
+tensorflow==2.15.1
+opencv-python-headless==4.8.1.78
+numpy==1.26.4
+scipy==1.11.4
+scikit-image==0.21.0
+mahotas==1.4.13
+scikit-learn==1.3.2
+
+# ── Firebase (Pi → cloud upload at dock) ─────────────────────────────
+firebase-admin
+
+# ── Optional: GPU-accelerated preprocessing ──────────────────────────
+# cupy-cuda12x
