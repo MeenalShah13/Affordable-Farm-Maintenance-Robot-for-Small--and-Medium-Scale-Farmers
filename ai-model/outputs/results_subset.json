@@ -1,0 +1,164 @@
+[
+  {
+    "experiment": "Exp1 - ABC",
+    "metrics": {
+      "vgg16_accuracy": 0.13000857084989548,
+      "selection_time_s": 513.2582454681396,
+      "n_selected": 492,
+      "n_original": 143019,
+      "reduction_ratio": 0.0034401023640215616
+    }
+  },
+  {
+    "experiment": "Exp1 - WOA-APSO",
+    "metrics": {
+      "vgg16_accuracy": 0.14800032476584116,
+      "selection_time_s": 255.5366575717926,
+      "n_selected": 458,
+      "n_original": 143019,
+      "reduction_ratio": 0.0032023717128493398
+    }
+  },
+  {
+    "experiment": "Exp1 - ACO",
+    "metrics": {
+      "vgg16_accuracy": 0.14800032476584116,
+      "selection_time_s": 245.00774669647217,
+      "n_selected": 1,
+      "n_original": 143019,
+      "reduction_ratio": 6.9920779756535806e-06
+    }
+  },
+  {
+    "experiment": "Exp2a - vgg16",
+    "metrics": {
+      "accuracy": 0.9396802325581395,
+      "f1_score_macro": 0.9271943422041133,
+      "prediction_time_s": 35.18239378929138,
+      "model_size_mb": 0.0,
+      "flops": 134757376.0,
+      "training_time_s": 4399.386876344681
+    }
+  },
+  {
+    "experiment": "Exp2a - vgg19_svm",
+    "metrics": {
+      "accuracy": 0.9299903100775194,
+      "f1_score_macro": 0.9184243382237584,
+      "prediction_time_s": 69.45410466194153,
+      "model_size_mb": 0.0,
+      "flops": 0.0,
+      "training_time_s": 362.7951216697693
+    }
+  },
+  {
+    "experiment": "Exp2a - hybrid_cnn",
+    "metrics": {
+      "accuracy": 0.9312015503875969,
+      "f1_score_macro": 0.9208682464301796,
+      "prediction_time_s": 6.556787490844727,
+      "model_size_mb": 0.0,
+      "flops": 5284896256.0,
+      "training_time_s": 2249.944087266922
+    }
+  },
+  {
+    "experiment": "Exp2a - kcnet",
+    "metrics": {
+      "accuracy": 0.38953488372093026,
+      "f1_score_macro": 0.24968231854049006,
+      "prediction_time_s": 0.07135796546936035,
+      "model_size_mb": 0.0,
+      "flops": 0.0,
+      "training_time_s": 0.7737853527069092
+    }
+  },
+  {
+    "experiment": "Exp2a - flycaps",
+    "metrics": {
+      "accuracy": 0.8008720930232558,
+      "f1_score_macro": 0.7050266818776536,
+      "prediction_time_s": 58.962618589401245,
+      "model_size_mb": 0.0,
+      "flops": 0.0,
+      "training_time_s": 216.35447645187378
+    }
+  },
+  {
+    "experiment": "Exp2a - litecshuffle",
+    "metrics": {
+      "accuracy": 0.9762596899224806,
+      "f1_score_macro": 0.9739451396133068,
+      "prediction_time_s": 8.941775560379028,
+      "model_size_mb": 0.0,
+      "flops": 1052795648.0,
+      "training_time_s": 3170.6695845127106
+    }
+  },
+  {
+    "experiment": "Exp2a - yang_vit",
+    "metrics": {
+      "accuracy": 0.6996124031007752,
+      "f1_score_macro": 0.6087768178974299,
+      "prediction_time_s": 5.925781488418579,
+      "model_size_mb": 0.0,
+      "flops": 717235440.0,
+      "training_time_s": 747.6654992103577
+    }
+  },
+  {
+    "experiment": "Exp2a - grasshopper",
+    "metrics": {
+      "accuracy": 0.5864825581395349,
+      "f1_score_macro": 0.4943776173605985,
+      "prediction_time_s": 0.18717551231384277,
+      "model_size_mb": 0.0,
+      "flops": 800512.0,
+      "training_time_s": 46.28256392478943
+    }
+  },
+  {
+    "experiment": "Exp2a - mantis",
+    "metrics": {
+      "accuracy": 0.2909399224806202,
+      "f1_score_macro": 0.18281813473361158,
+      "prediction_time_s": 0.01214289665222168,
+      "model_size_mb": 0.0,
+      "flops": 0.0,
+      "training_time_s": 0.15652799606323242
+    }
+  },
+  {
+    "experiment": "Exp2b \u2013 hybrid_cnn pruned@30%",
+    "metrics": {
+      "accuracy": 0.8868701550387597,
+      "f1_score_macro": 0.8764689732519595,
+      "prediction_time_s": 13.956552982330322,
+      "model_size_mb": 0.0,
+      "flops": 5284896256.0,
+      "accuracy_delta_vs_unpruned": -0.04433139534883723
+    }
+  },
+  {
+    "experiment": "Exp2b \u2013 litecshuffle pruned@30%",
+    "metrics": {
+      "accuracy": 0.9135174418604651,
+      "f1_score_macro": 0.9084804983717346,
+      "prediction_time_s": 13.827579975128174,
+      "model_size_mb": 0.0,
+      "flops": 1052795648.0,
+      "accuracy_delta_vs_unpruned": -0.06274224806201545
+    }
+  },
+  {
+    "experiment": "Exp2b \u2013 yang_vit pruned@30%",
+    "metrics": {
+      "accuracy": 0.563468992248062,
+      "f1_score_macro": 0.4697725750488637,
+      "prediction_time_s": 13.137125015258789,
+      "model_size_mb": 0.0,
+      "flops": 717235440.0,
+      "accuracy_delta_vs_unpruned": -0.1361434108527132
+    }
+  }
+]
