@@ -1,6 +1,6 @@
 # AI Model Training & Evaluation
 
-Comprehensive framework for training, evaluating, and deploying 9 crop disease classification models for FieldBot.
+Comprehensive framework for training, evaluating, and deploying 7 crop disease classification models for FieldBot. In the actual paper, only 4 were considered as many of them did not show promising enough results to be shown in the final project paper.
 
 ## Quick Start
 
@@ -31,7 +31,7 @@ accuracy = trainer.evaluate(X_test, y_test)
 
 ## Models
 
-All 9 models implement a common interface:
+All 7 models implement a common interface:
 
 ```python
 model.build()                    # Initialize architecture
@@ -67,7 +67,7 @@ model.train(X_tr, y_tr)  # No validation needed (sklearn)
 
 ### 3. HybridCNN
 **Type**: Custom CNN (Nature 2025 paper)  
-**Input**: Images (160×160×3)  
+**Input**: Images (160×160×3)
 **Architecture**: Conv(32)→BN→ReLU→MaxPool, Conv(64)→BN→ReLU→MaxPool, Conv(128)→BN→ReLU→GAP, Dense(256→15)  
 **Key features**: Lightweight, good accuracy-speed tradeoff, batch norm stability  
 **Use case**: Standard image classification
@@ -89,37 +89,7 @@ model = KCNet(n_hidden=2000, k_connections=6, n_classes=15)
 model.train(X_features_tr, y_tr)  # Analytic fit, no validation
 ```
 
-### 5. FlyCaps
-**Type**: Capsule network + Firefly optimization + ELM (IJRITCC 2023)  
-**Input**: Images or Features  
-**Architecture**:
-- VGG19 backbone (frozen) or dense projection
-- Primary capsule layer (squash routing)
-- Firefly-optimised feature selection (multi-objective: accuracy + multilinearity + count)
-- ELM head (analytic Moore-Penrose solution)
-
-**Key features**:
-- Sophisticated routing (squash activation)
-- Metaheuristic feature selection
-- Analytic output layer (fast training)
-- Paper specifies: lr=0.0001, batch=30, epochs=120, dropout=0.1
-
-**Use case**: State-of-the-art accuracy on plant disease, strong generalization
-
-```python
-model = FlyCaps(
-    input_shape=(160, 160, 3),
-    n_classes=15,
-    n_caps=8,
-    caps_dim=16,
-    elm_hidden=256,
-    firefly_n=20,
-    firefly_iter=30
-)
-model.train(X_tr, y_tr)  # Image-based training
-```
-
-### 6. LiteCShuffle ⭐ DEPLOYED
+### 5. LiteCShuffle ⭐ DEPLOYED
 **Type**: Lightweight attention CNN (Cogent F&A 2025)  
 **Input**: Images (160×160×3)  
 **Architecture**:
@@ -141,7 +111,7 @@ model = LiteCShuffle(input_shape=(160, 160, 3), base_channels=32, n_classes=15)
 model.build().train(X_tr, y_tr, X_val, y_val, epochs=50)
 ```
 
-### 7. YangViT
+### 6. YangViT
 **Type**: SNN-inspired Visual Perception Network (IEEE TSMC 2024 proxy)  
 **Input**: Images (160×160×3)  
 **Architecture**:
@@ -164,7 +134,7 @@ model = YangViT(
 model.build().train(X_tr, y_tr, X_val, y_val, epochs=50)
 ```
 
-### 8. HybridGrasshopperABC
+### 7. HybridGrasshopperABC
 **Type**: MLP proxy (Springer 2023 — paywall, not implemented in full)  
 **Input**: Features (1-D vector)  
 **Architecture**: Deep MLP with 4 hidden layers (512→256→128→output)  
@@ -174,18 +144,6 @@ model.build().train(X_tr, y_tr, X_val, y_val, epochs=50)
 ```python
 model = HybridGrasshopperABC(feature_dim=100, n_classes=15)
 model.build().train(X_features_tr, y_tr, X_val, y_val, epochs=50)
-```
-
-### 9. MantisSearch
-**Type**: ELM with Mantis Search Algorithm (ScienceDirect 2023 — paywall, not implemented in full)  
-**Input**: Features (1-D vector)  
-**Architecture**: Random input weights + tanh hidden layer (1000 units) → analytic ridge regression output  
-**Key features**: No training of hidden layer, fast inference, analytic solution  
-**Use case**: Extreme Learning Machines, lightweight feature classifiers
-
-```python
-model = MantisSearch(n_hidden=1000, n_classes=15)
-model.train(X_features_tr, y_tr)  # Analytic fit
 ```
 
 ---
@@ -354,7 +312,7 @@ python experiments.py
 ```
 
 **Included experiments**:
-1. **All 9 models**: Training time, accuracy, inference speed
+1. **All 7 models**: Training time, accuracy, inference speed
 2. **Ablation studies**: Impact of preprocessing, feature selection
 3. **Generalization**: Cross-dataset evaluation
 4. **Efficiency**: Model size, RAM usage, latency
@@ -423,11 +381,9 @@ Key parameters by model:
 | VGG19_SVM | svm_C, kernel | C=0.1–10, kernel='rbf' |
 | HybridCNN | batch_size, dropout | 32–64 batch, 0.3–0.5 dropout |
 | KCNet | n_hidden, ridge_alpha | 1000–4000 hidden, 0.1–10 alpha |
-| FlyCaps | firefly_n, firefly_iter | 20 fireflies, 30 iterations |
 | LiteCShuffle | base_channels | 32–64 channels |
 | YangViT | n_excitatory, k_wta | 64 excitatory, 8 top-k |
 | Grasshopper | — | (fixed MLP) |
-| Mantis | n_hidden, ridge_alpha | 500–2000 hidden, 0.1–10 alpha |
 
 ### Grid Search Example
 ```python
@@ -534,13 +490,12 @@ outputs/
 ## References
 
 1. **LiteCShuffle** (Cogent F&A 2025): Lightweight CNN with channel attention
-2. **FlyCaps** (IJRITCC 2023): Capsule network + Firefly optimization + ELM
-3. **HybridCNN** (Nature 2025): WOA-APSO optimized custom architecture
-4. **KCNet** (arxiv:2108.07554): Kenyon cell-inspired sparse networks
-5. **YangViT** (IEEE TSMC 2024): SNN-inspired visual perception layer
-6. **GradInit** (CS231n): Gradient-based initialization
-7. **Importance Sampling** (Loshchilov et al., CS231n): Hard-example weighting
-8. **Channel Pruning**: Magnitude-based structured pruning for efficiency
+2. **HybridCNN** (Nature 2025): WOA-APSO optimized custom architecture
+3. **KCNet** (arxiv:2108.07554): Kenyon cell-inspired sparse networks
+4. **YangViT** (IEEE TSMC 2024): SNN-inspired visual perception layer
+5. **GradInit** (CS231n): Gradient-based initialization
+6. **Importance Sampling** (Loshchilov et al., CS231n): Hard-example weighting
+7. **Channel Pruning**: Magnitude-based structured pruning for efficiency
 
 ---
 

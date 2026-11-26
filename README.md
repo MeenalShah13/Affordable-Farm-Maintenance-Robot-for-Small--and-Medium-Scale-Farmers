@@ -1,6 +1,6 @@
 # FieldBot — Autonomous Crop Health Monitoring Robot
 
-![Status](https://img.shields.io/badge/status-Active-brightgreen)
+![Status](https://img.shields.io/badge/status-Paused-orange)
 ![Python](https://img.shields.io/badge/python-3.9+-blue)
 ![License](https://img.shields.io/badge/license-AGPL-orange)
 
@@ -69,19 +69,19 @@ python experiments.py                 # Feature selection & comparisons
 - **Odometry-based localization**: Encoder ticks → pose estimates with ~10cm accuracy
 - **Obstacle detection**: IR rangefinders + IMU bump detection + stuck recovery
 - **Dynamic path planning**: Dijkstra routing around obstacles, obstacle decay over time
-- **Dock detection**: Charging dock IR beacons for return-to-dock homing
+- **Naivgation to dock**: Robot returns to dock to charge on low battery detection using Djikstra
 
 ### Crop Health Sampling
 - **Automated leaf collection**: Motor-driven camera arm positions leaves for imaging every 30s during mowing
-- **Soil probe**: Motorized probe collects subsurface samples (~15m depth max)
+- **Soil probe**: Motorized probe collects subsurface samples (~7cm depth max)
 - **Multi-modal sensing**: Soil moisture, temperature, humidity, light, battery state
 
 ### AI Disease Detection
-- **9 trained models** for crop disease classification (Pepper, Tomato, Potato)
+- **5 trained models** for crop disease classification (Pepper, Tomato, Potato)
 - **LiteCShuffle** (deployed): Lightweight attention-based CNN, <10s inference
 - **Preprocessing pipeline**: Denoise (cellular automaton) → contrast (CLAHE) → background removal
 - **Heuristic leaf detection**: Green dominance + edge density scoring
-- **15 disease classes** + healthy variants for target crops
+- **12 disease classes** + healthy variants for target crops
 
 ### Cloud Integration
 - **Firebase realtime sync**: Images, sensor readings, grid state, session metadata
@@ -187,14 +187,11 @@ Train & evaluate 9 models in **ai-model/model_training.py**:
 | Model | Type | Input | Key Features |
 |-------|------|-------|--------------|
 | SimpleVGG16 | CNN | Images | Transfer learning baseline |
-| VGG19_SVM | Hybrid | Images | VGG19 features → RBF-SVM |
 | HybridCNN | Custom | Images | Nature 2025 paper architecture |
 | KCNet | SNN proxy | Features | Sparse random Kenyon cells (2000×) |
-| FlyCaps | Capsule | Images/Features | Firefly-optimised ELM |
 | **LiteCShuffle** | **Attention CNN** | **Images** | **Deployed** — lightweight, <10s |
 | YangViT | SNN proxy | Images | Winner-take-all lateral inhibition |
 | HybridGrasshopperABC | MLP | Features | Grasshopper + ABC |
-| MantisSearch | ELM | Features | Mantis Search algorithm |
 
 **Training from scratch**:
 ```python
@@ -312,10 +309,9 @@ Features:
 ## Key Papers & References
 
 1. **LiteCShuffle** (Cogent F&A 2025): Lightweight CNN with channel attention & shuffle
-2. **FlyCaps** (IJRITCC 2023): Capsule network + Firefly metaheuristic + ELM
-3. **HybridCNN** (Nature 2025): WOA-APSO optimization paper
-4. **KCNet** (arxiv:2108.07554): Insect-inspired sparse random networks
-5. **YangViT** (IEEE TSMC 2024): SNN-inspired visual perception proxy
+2. **HybridCNN** (Nature 2025): WOA-APSO optimization paper
+3. **KCNet** (arxiv:2108.07554): Insect-inspired sparse random networks
+4. **YangViT** (IEEE TSMC 2024): SNN-inspired visual perception proxy
 
 ## License
 
